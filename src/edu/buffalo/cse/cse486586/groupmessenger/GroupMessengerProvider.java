@@ -59,7 +59,7 @@ public class GroupMessengerProvider extends ContentProvider {
     	
     	//@vino coding
     	//check if the file is existing
-    	if(){
+    	if(values!=null){
     		//Existing update
     	}
     	else{
