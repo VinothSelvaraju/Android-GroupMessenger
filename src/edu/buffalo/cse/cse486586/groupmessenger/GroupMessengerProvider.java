@@ -1,8 +1,14 @@
 package edu.buffalo.cse.cse486586.groupmessenger;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
 import android.content.ContentProvider;
 import android.content.ContentValues;
+import android.content.Context;
 import android.database.Cursor;
+import android.database.MatrixCursor;
 import android.net.Uri;
 import android.util.Log;
 
@@ -50,6 +56,36 @@ public class GroupMessengerProvider extends ContentProvider {
          * internal storage option that I used in PA1. If you want to use that option, please
          * take a look at the code for PA1.
          */
+    	
+    	//@vino coding
+    	//check if the file is existing
+    	if(){
+    		//Existing update
+    	}
+    	else{
+    		//New add
+    		String filePath = uri.getPath();
+        	String columnValue = values.getAsString(filePath);
+        	
+        	FileOutputStream fos = null;
+        	try {
+    			fos = this.getContext().openFileOutput(filePath, Context.MODE_PRIVATE);
+    			fos.write(columnValue.getBytes());
+    		} catch (IOException e1) {
+    			e1.printStackTrace();
+    		}
+        	finally{
+        		try {
+    				fos.close();
+    			} catch (Exception e) {
+    				e.printStackTrace();
+    			}
+        	}
+        	
+    	}
+    	
+    	
+    	
         Log.v("insert", values.toString());
         return uri;
     }
@@ -74,8 +110,48 @@ public class GroupMessengerProvider extends ContentProvider {
          * recommend building a MatrixCursor described at:
          * http://developer.android.com/reference/android/database/MatrixCursor.html
          */
+    	
+    	//@author - vino coding begins
+    	//build the cursor object
+    	String[] columnNames = new String[2];
+    	columnNames[0] = "key";
+    	columnNames[1] = "value";
+    	MatrixCursor cursor = new MatrixCursor(columnNames);
+    	
+    	FileInputStream fileInputStream = null;
+    	int content;
+		StringBuilder valueBuilder =  new StringBuilder();
+		String value = "";
+    	
+		
+		//file read and store the value read from the file as a String object
+    	try {
+    		fileInputStream = this.getContext().openFileInput(selection);
+			while ((content = fileInputStream.read()) != -1) {
+				valueBuilder.append(content);
+				System.out.print((char) content);
+			}
+			value = valueBuilder.toString();
+			
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+    	finally{
+    		try {
+				fileInputStream.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+    	}
+    	
+   
+    	//building the single row with key as in file name and value as the value read from the file
+    	Object[] columnValues = new Object[2];
+    	columnValues[0] = uri.getPath();
+    	columnValues[1] = value;
+    	cursor.addRow(columnValues);
         Log.v("query", selection);
-        return null;
+        return cursor;
     }
 
     @Override
