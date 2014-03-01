@@ -1,6 +1,7 @@
 package edu.buffalo.cse.cse486586.groupmessenger;
 
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
@@ -59,33 +60,24 @@ public class GroupMessengerProvider extends ContentProvider {
     	
     	//@vino coding
     	//check if the file is existing
-    	if(values!=null){
-    		//Existing update
-    	}
-    	else{
-    		//New add
-    		String filePath = uri.getPath();
-        	String columnValue = values.getAsString(filePath);
-        	
-        	FileOutputStream fos = null;
-        	try {
-    			fos = this.getContext().openFileOutput(filePath, Context.MODE_PRIVATE);
-    			fos.write(columnValue.getBytes());
-    		} catch (IOException e1) {
-    			e1.printStackTrace();
-    		}
-        	finally{
-        		try {
-    				fos.close();
-    			} catch (Exception e) {
-    				e.printStackTrace();
-    			}
-        	}
-        	
-    	}
-    	
-    	
-    	
+    	String columnKey = values.getAsString("key");
+    	String columnValue = values.getAsString("value");
+    	FileOutputStream fos = null;
+    	try {
+		
+			fos = this.getContext().openFileOutput(columnKey, Context.MODE_PRIVATE);
+			fos.write(columnValue.getBytes());
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+    	finally{
+    		try {
+				fos.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+    		    	
         Log.v("insert", values.toString());
         return uri;
     }
@@ -122,8 +114,7 @@ public class GroupMessengerProvider extends ContentProvider {
     	int content;
 		StringBuilder valueBuilder =  new StringBuilder();
 		String value = "";
-    	
-		
+
 		//file read and store the value read from the file as a String object
     	try {
     		fileInputStream = this.getContext().openFileInput(selection);
@@ -147,7 +138,7 @@ public class GroupMessengerProvider extends ContentProvider {
    
     	//building the single row with key as in file name and value as the value read from the file
     	Object[] columnValues = new Object[2];
-    	columnValues[0] = uri.getPath();
+    	columnValues[0] = selection;
     	columnValues[1] = value;
     	cursor.addRow(columnValues);
         Log.v("query", selection);
