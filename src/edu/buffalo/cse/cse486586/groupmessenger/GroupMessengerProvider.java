@@ -1,9 +1,11 @@
 package edu.buffalo.cse.cse486586.groupmessenger;
 
+import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 
 import android.content.ContentProvider;
 import android.content.ContentValues;
@@ -118,12 +120,10 @@ public class GroupMessengerProvider extends ContentProvider {
 		//file read and store the value read from the file as a String object
     	try {
     		fileInputStream = this.getContext().openFileInput(selection);
-			while ((content = fileInputStream.read()) != -1) {
-				valueBuilder.append(content);
-				System.out.print((char) content);
-			}
-			value = valueBuilder.toString();
-			
+    		BufferedReader br = new BufferedReader(new InputStreamReader(fileInputStream));
+			value = br.readLine();
+			//value = valueBuilder.toString();
+			Log.v("query", value);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -141,7 +141,7 @@ public class GroupMessengerProvider extends ContentProvider {
     	columnValues[0] = selection;
     	columnValues[1] = value;
     	cursor.addRow(columnValues);
-        Log.v("query", selection);
+        //Log.v("query", selection);
         return cursor;
     }
 
