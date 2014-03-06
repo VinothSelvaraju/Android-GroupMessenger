@@ -167,6 +167,23 @@ public class GroupMessengerActivity extends Activity {
         	}
     	}
     	
+    	private synchronized void multicast(String messsage){
+    		
+    		for(int port=11108;port<=11124;port+=4){
+            	Socket socket=null;
+				try {
+					socket = new Socket(InetAddress.getByAddress(new byte[]{10, 0, 2, 2}),Integer.parseInt(String.valueOf(port)));
+				} catch (NumberFormatException e) {
+					e.printStackTrace();
+				} catch (UnknownHostException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+            	writeToSocket(socket,messsage);
+    		}
+    	
+    	}
     	
         @Override
         protected Void doInBackground(ServerSocket... sockets) {
@@ -194,10 +211,12 @@ public class GroupMessengerActivity extends Activity {
 						orderMessageBuilder.append(messageText);
 						orderMessageBuilder.append("_"+sg);
 						String orderMessage = orderMessageBuilder.toString();
+					
+						//Multicast
+						multicast(orderMessage);
 						
-						new ClientTask().executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, orderMessage, myPort);
+						//new ClientTask().executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, orderMessage, myPort);
 						sg++;
-						
 					}
 					// receive order message -> deliver it
 					else{
@@ -211,7 +230,6 @@ public class GroupMessengerActivity extends Activity {
 							cv.put("value", orderMessFrag[1]);
 							Log.e("insert", String.valueOf(sg));
 							getBaseContext().getContentResolver().insert(mUri, cv);
-							
 						}
 					}
 				}
@@ -325,10 +343,10 @@ public class GroupMessengerActivity extends Activity {
                                
                 for(String itr:remotePortList){
                 	Socket socket = new Socket(InetAddress.getByAddress(new byte[]{10, 0, 2, 2}),Integer.parseInt(itr));
-                	if(msgs[0].contains("order")){
-                		writeToSocket(socket,msgs[0]);
-                	}
-                	else{
+//                	if(msgs[0].contains("order")){
+//                		writeToSocket(socket,msgs[0]);
+//                	}
+                	//else{
                 		StringBuffer sb = new StringBuffer();
                         sb.append(msgs[0].trim());
                         sb.append(" ");
@@ -342,7 +360,7 @@ public class GroupMessengerActivity extends Activity {
                         System.out.println("MESSAGE: "+ finalMessage);
                         
                         writeToSocket(socket,finalMessage);  
-                	}
+                	//}
                 }
                
             } catch (UnknownHostException e) {
