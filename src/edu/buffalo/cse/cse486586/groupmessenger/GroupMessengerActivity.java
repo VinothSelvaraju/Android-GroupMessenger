@@ -12,16 +12,20 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.HashMap;
 
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.app.Activity;
+import android.content.ContentValues;
 import android.content.Context;
 import android.telephony.TelephonyManager;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.View.OnKeyListener;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -40,12 +44,23 @@ public class GroupMessengerActivity extends Activity {
     static final String REMOTE_PORT2 = "11116";
     static final String REMOTE_PORT3 = "11120";
     static final String REMOTE_PORT4 = "11124";
+    static String myPort = "";
+    int localCounter = -1;
 	static final String TAG = GroupMessengerActivity.class.getSimpleName();
+	private final Uri mUri = buildUri("content", "edu.buffalo.cse.cse486586.groupmessenger.provider");;
+	
+	private Uri buildUri(String scheme, String authority) {
+        Uri.Builder uriBuilder = new Uri.Builder();
+        uriBuilder.authority(authority);
+        uriBuilder.scheme(scheme);
+        return uriBuilder.build();
+    }
 	
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_group_messenger);
+        
 
         /*
          * TODO: Use the TextView to display your messages. Though there is no grading component
@@ -61,11 +76,11 @@ public class GroupMessengerActivity extends Activity {
         findViewById(R.id.button1).setOnClickListener(
                 new OnPTestClickListener(tv, getContentResolver()));
         
-        System.out.println("TEST");
+      
         
         TelephonyManager tel = (TelephonyManager) this.getSystemService(Context.TELEPHONY_SERVICE);
         String portStr = tel.getLine1Number().substring(tel.getLine1Number().length() - 4);
-        final String myPort = String.valueOf((Integer.parseInt(portStr) * 2));
+        myPort = String.valueOf((Integer.parseInt(portStr) * 2));
         
         
         try {
@@ -81,18 +96,21 @@ public class GroupMessengerActivity extends Activity {
          * In your implementation you need to get the message from the input box (EditText)
          * and send it to other AVDs in a total-causal order.
          */
-        
         final EditText editText = (EditText) findViewById(R.id.editText1);
-        editText.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-       
-                String msg = editText.getText().toString() + "\n";
+        
+        findViewById(R.id.button4).setOnClickListener(new OnClickListener(){
+
+			@Override
+			public void onClick(View arg0) {
+				String msg = editText.getText().toString() + "\n";
                 editText.setText(""); // This is one way to reset the input box.
                 TextView localTextView = (TextView) findViewById(R.id.textView1);
                 localTextView.append("\t" + msg); // This is one way to display a string.
                 TextView remoteTextView = (TextView) findViewById(R.id.textView1);
                 remoteTextView.append("\n");
+                
+               
+                localCounter++;
 
                 /*
                  * Note that the following AsyncTask uses AsyncTask.SERIAL_EXECUTOR, not
@@ -101,11 +119,9 @@ public class GroupMessengerActivity extends Activity {
                  * http://developer.android.com/reference/android/os/AsyncTask.html
                  */
                 new ClientTask().executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, msg, myPort);
-       
-
-            }
-        });
-         
+      	
+			}
+        });         
     }
 
     @Override
@@ -117,27 +133,121 @@ public class GroupMessengerActivity extends Activity {
     
     
     private class ServerTask extends AsyncTask<ServerSocket, String, Void> {
-
+    	int sg=0;
+        int rg=0;
+    	private String readFromSocket(ServerSocket serverSocket){
+    		String messageText = "";
+			try {
+				Socket clientSocket = serverSocket.accept();
+				BufferedReader messageIn = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+				messageText = messageIn.readLine();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+        	return messageText;
+    	}
+    	
+    	
+    	private void writeToSocket(Socket socket, String message){
+    		
+			try {
+				OutputStream outputStream = socket.getOutputStream();
+                BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(outputStream));
+                bufferedWriter.write(message);
+                bufferedWriter.flush();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+        	finally{
+        		try {
+					socket.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+        	}
+    	}
+    	
+    	
         @Override
         protected Void doInBackground(ServerSocket... sockets) {
             ServerSocket serverSocket = sockets[0];
             
-            /*
-             * TODO: Fill in your server code that receives messages and passes them
-             * to onProgressUpdate().
-             */
-            //Vino code
+            ArrayList<String> SequencerMessageList = new ArrayList<String>();
+            ArrayList<String> messageList = new ArrayList<String>();
+           
+            
+            String myPort = GroupMessengerActivity.myPort;
+            System.out.println("PRINT PORT NO: "+myPort);
+            
             while(true){
-            	try {
-                	Socket clientSocket = serverSocket.accept();
-                	BufferedReader messageIn = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                	String messageText = messageIn.readLine();
-                	Log.e(messageText, "Message received");
-                	//System.out.println("Input Message: "+ messageText);
-                	publishProgress(messageText);
-                } catch (IOException e) {
-    				e.printStackTrace();
-    			}
+            	String messageText = readFromSocket(serverSocket);
+            	Log.e(messageText, "Message received");
+            	System.out.println("MY PORT NUMBER: "+myPort);
+            	
+				if(myPort.equals("11108") && !messageText.isEmpty()){
+					System.out.println("I M SEQUENCER");
+					//receive Normal message and -> multicast the message to the group
+					if(!messageText.contains("order")){
+						SequencerMessageList.add(messageText);
+						StringBuilder orderMessageBuilder = new StringBuilder();
+						orderMessageBuilder.append("order_");
+						orderMessageBuilder.append(messageText);
+						orderMessageBuilder.append("_"+sg);
+						String orderMessage = orderMessageBuilder.toString();
+						
+						new ClientTask().executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, orderMessage, myPort);
+						sg++;
+						
+					}
+					// receive order message -> deliver it
+					else{
+						String[] orderMessFrag = messageText.split("_");
+						if(SequencerMessageList.contains(orderMessFrag[1])){
+							System.out.println("DELIVER - "+ orderMessFrag[1]);
+							
+							// normal message they receive over the socket - Need to deliver it - insert into content provider	
+							ContentValues cv = new ContentValues();
+							cv.put("key",sg);
+							cv.put("value", orderMessFrag[1]);
+							Log.e("insert", String.valueOf(sg));
+							getBaseContext().getContentResolver().insert(mUri, cv);
+							
+						}
+					}
+				}
+				else{
+					System.out.println("I M GROUP MEMBER");
+					//receive order message
+					if(messageText.contains("order")){
+						System.out.println("GROUP MEMBER - RECEIVED ORDER MESSAGE");
+						String[] orderMessFrag = messageText.split("_");
+						System.out.println("PRINT rg and sg AT GROUP MEMBER SIDE: rg: "+rg+" sg: "+sg);
+						if(messageList.contains(orderMessFrag[1]) && rg == sg){
+							System.out.println("DELIVER - "+ orderMessFrag[1]);
+							
+							ContentValues cv = new ContentValues();
+							cv.put("key",sg);
+							cv.put("value", orderMessFrag[1]);
+							Log.e("insert", String.valueOf(sg));
+							getBaseContext().getContentResolver().insert(mUri, cv);
+							
+							rg=sg+1;
+						}
+					}
+					else{
+						//receive normal message - put it in a list
+						System.out.println("GROUP MEMBER - RECEIVED NORMAL MESSAGE AND ADDED TO LIST: "+ messageText);
+						messageList.add(messageText);
+					
+					}
+					
+
+					
+				}
+				
+
+				//System.out.println("Input Message: "+ messageText);
+				publishProgress(messageText);
             }
         }
 
@@ -176,61 +286,63 @@ public class GroupMessengerActivity extends Activity {
     
     
     private class ClientTask extends AsyncTask<String, Void, Void> {
-
+    	
+    	private void writeToSocket(Socket socket, String message){
+			try {
+				OutputStream outputStream = socket.getOutputStream();
+                BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(outputStream));
+                bufferedWriter.write(message);
+                bufferedWriter.flush();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+        	finally{
+        		try {
+					socket.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+        	}
+    	}
+    	
+    	private ArrayList<String> remotePortComp(String inputMessage){
+    		ArrayList<String> remotePortList = new ArrayList<String>();
+    		remotePortList.add(REMOTE_PORT0);
+          	remotePortList.add(REMOTE_PORT1);
+          	remotePortList.add(REMOTE_PORT2);
+          	remotePortList.add(REMOTE_PORT3);
+          	remotePortList.add(REMOTE_PORT4);
+          	return remotePortList;
+    	}
+    	
+    	
         @Override
         protected Void doInBackground(String... msgs) {
             try {
-                //String remotePort = REMOTE_PORT0;
-            	
-                ArrayList<String> remotePortList = new ArrayList<String>();
-                Log.e(msgs[1], "Port no: ");
-                System.out.println("TEST<><><><><><"+msgs[1]);
-                if (msgs[1].equals(REMOTE_PORT0)){
-                	
-                	remotePortList.add(REMOTE_PORT1);
-                	remotePortList.add(REMOTE_PORT2);
-                	remotePortList.add(REMOTE_PORT3);
-                	remotePortList.add(REMOTE_PORT4);
-                }
-                   
-                else if (msgs[1].equals(REMOTE_PORT1)){
-                	remotePortList.add(REMOTE_PORT0);
-                	remotePortList.add(REMOTE_PORT2);
-                	remotePortList.add(REMOTE_PORT3);
-                	remotePortList.add(REMOTE_PORT4);
-                }
-                    
-                else if (msgs[1].equals(REMOTE_PORT2)){
-                	remotePortList.add(REMOTE_PORT0);
-                	remotePortList.add(REMOTE_PORT1);
-                	remotePortList.add(REMOTE_PORT3);
-                	remotePortList.add(REMOTE_PORT4);
-                }
-                	
-                else if (msgs[1].equals(REMOTE_PORT3)){
-                	remotePortList.add(REMOTE_PORT0);
-                	remotePortList.add(REMOTE_PORT1);
-                	remotePortList.add(REMOTE_PORT2);
-                	remotePortList.add(REMOTE_PORT4);
-                }
-                	
-                else if (msgs[1].equals(REMOTE_PORT4)){
-                	remotePortList.add(REMOTE_PORT0);
-                	remotePortList.add(REMOTE_PORT1);
-                	remotePortList.add(REMOTE_PORT2);
-                	remotePortList.add(REMOTE_PORT3);
-                }
                 
+            	ArrayList<String> remotePortList = remotePortComp(msgs[1]);
+                Log.e(msgs[1], "Port no: ");
+                               
                 for(String itr:remotePortList){
                 	Socket socket = new Socket(InetAddress.getByAddress(new byte[]{10, 0, 2, 2}),Integer.parseInt(itr));
-    	            String msgToSend = msgs[0];
-    	           
-    	            //vino code
-                    OutputStream outputStream = socket.getOutputStream();
-                    BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(outputStream));
-                    bufferedWriter.write(msgToSend);
-                    bufferedWriter.flush();
-                    socket.close();
+                	if(msgs[0].contains("order")){
+                		writeToSocket(socket,msgs[0]);
+                	}
+                	else{
+                		StringBuffer sb = new StringBuffer();
+                        sb.append(msgs[0].trim());
+                        sb.append(" ");
+                        sb.append(msgs[1]);
+                       // sb.append("_");
+                        //sb.append("AVD");
+                        //sb.append(i);
+                        //sb.append("_");
+                        //sb.append(localCounter);
+                        String finalMessage = sb.toString();
+                        System.out.println("MESSAGE: "+ finalMessage);
+                        
+                        writeToSocket(socket,finalMessage);  
+                	}
                 }
                
             } catch (UnknownHostException e) {
