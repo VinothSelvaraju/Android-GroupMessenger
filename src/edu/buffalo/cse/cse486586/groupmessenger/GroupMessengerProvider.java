@@ -119,6 +119,7 @@ public class GroupMessengerProvider extends ContentProvider {
 
 		//file read and store the value read from the file as a String object
     	try {
+    		System.out.println("BEFORE FILE NOT FOUND PRINT KEY: "+selection);
     		fileInputStream = this.getContext().openFileInput(selection);
     		BufferedReader br = new BufferedReader(new InputStreamReader(fileInputStream));
 			value = br.readLine();
