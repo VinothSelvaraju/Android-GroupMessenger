@@ -376,16 +376,16 @@ public class GroupMessengerActivity extends Activity {
                     //sb.append(localCounter);
                     String finalMessage = sb.toString();
                     System.out.println("MESSAGE FROM CLIENT SOCKET: "+ finalMessage);
-                    try {
-        				OutputStream outputStream = socket.getOutputStream();
-                        BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(outputStream));
-                        bufferedWriter.write(finalMessage);
-                        bufferedWriter.flush();
-                        outputStream.close();
-                        socket.close();
-        			} catch (IOException e) {
-        				e.printStackTrace();
-        			}
+                   // try {
+    				OutputStream outputStream = socket.getOutputStream();
+                    BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(outputStream));
+                    bufferedWriter.write(finalMessage);
+                    bufferedWriter.flush();
+                    outputStream.close();
+                    socket.close();
+        			//} catch (IOException e) {
+        			//	e.printStackTrace();
+        			//}
 //                	finally{
 //                		try {
 //        					socket.close();
