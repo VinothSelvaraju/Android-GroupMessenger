@@ -212,76 +212,76 @@ public class GroupMessengerActivity extends Activity {
             	//String messageText = readFromSocket(serverSocket);
             	Log.e(messageText, "Message received");
             	System.out.println("MY PORT NUMBER: "+myPort);
+//            	
+//            	ContentValues cv = new ContentValues();
+//            	System.out.println("KEY TO BE INSERTED: "+sg);
+//				cv.put("key",String.valueOf(sg));
+//				cv.put("value", messageText);
+//				Log.e("insert", String.valueOf(sg));
+//				getBaseContext().getContentResolver().insert(mUri, cv);
+//				sg++;
             	
-            	ContentValues cv = new ContentValues();
-            	System.out.println("KEY TO BE INSERTED: "+sg);
-				cv.put("key",String.valueOf(sg));
-				cv.put("value", messageText);
-				Log.e("insert", String.valueOf(sg));
-				getBaseContext().getContentResolver().insert(mUri, cv);
-				sg++;
-            	
-//				if(myPort.equals("11108")){
-//					System.out.println("I M SEQUENCER");
-//					//receive Normal message and -> multicast the message to the group
-//					if(!messageText.contains("order")){
-//						SequencerMessageList.add(messageText);
-//						StringBuilder orderMessageBuilder = new StringBuilder();
-//						orderMessageBuilder.append("order_");
-//						orderMessageBuilder.append(messageText);
-//						orderMessageBuilder.append("_"+sg);
-//						String orderMessage = orderMessageBuilder.toString();
-//					
-//						//Multicast
-//						multicast(orderMessage);
-//						
-//						//new ClientTask().executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, orderMessage, myPort);
-//						sg++;
-//					}
-//					// receive order message -> deliver it
-//					else{
-//						String[] orderMessFrag = messageText.split("_");
-//						if(SequencerMessageList.contains(orderMessFrag[1])){
-//							System.out.println("DELIVER - "+ orderMessFrag[1]);
-//							
-//							// normal message they receive over the socket - Need to deliver it - insert into content provider	
-//							ContentValues cv = new ContentValues();
-//							cv.put("key",String.valueOf(sg));
-//							cv.put("value", orderMessFrag[1]);
-//							Log.e("insert", String.valueOf(sg));
-//							getBaseContext().getContentResolver().insert(mUri, cv);
-//						}
-//					}
-//				}
-//				else{
-//					System.out.println("I M GROUP MEMBER");
-//					//receive order message
-//					if(messageText.contains("order")){
-//						System.out.println("GROUP MEMBER - RECEIVED ORDER MESSAGE");
-//						String[] orderMessFrag = messageText.split("_");
-//						System.out.println("PRINT rg and sg AT GROUP MEMBER SIDE: rg: "+rg+" sg: "+sg);
-//						if(messageList.contains(orderMessFrag[1]) && rg == sg){
-//							System.out.println("DELIVER - "+ orderMessFrag[1]);
-//							
-//							ContentValues cv = new ContentValues();
-//							cv.put("key",String.valueOf(sg));
-//							cv.put("value", orderMessFrag[1]);
-//							Log.e("insert", String.valueOf(sg));
-//							getBaseContext().getContentResolver().insert(mUri, cv);
-//							
-//							rg=sg+1;
-//						}
-//					}
-//					else{
-//						//receive normal message - put it in a list
-//						System.out.println("GROUP MEMBER - RECEIVED NORMAL MESSAGE AND ADDED TO LIST: "+ messageText);
-//						messageList.add(messageText);
-//					
-//					}
-//					
-//
-//					
-//				}
+				if(myPort.equals("11108")){
+					System.out.println("I M SEQUENCER");
+					//receive Normal message and -> multicast the message to the group
+					if(!messageText.contains("order")){
+						SequencerMessageList.add(messageText);
+						StringBuilder orderMessageBuilder = new StringBuilder();
+						orderMessageBuilder.append("order_");
+						orderMessageBuilder.append(messageText);
+						orderMessageBuilder.append("_"+sg);
+						String orderMessage = orderMessageBuilder.toString();
+					
+						//Multicast
+						multicast(orderMessage);
+						
+						//new ClientTask().executeOnExecutor(AsyncTask.SERIAL_EXECUTOR, orderMessage, myPort);
+						sg++;
+					}
+					// receive order message -> deliver it
+					else{
+						String[] orderMessFrag = messageText.split("_");
+						if(SequencerMessageList.contains(orderMessFrag[1])){
+							System.out.println("DELIVER - "+ orderMessFrag[1]);
+							
+							// normal message they receive over the socket - Need to deliver it - insert into content provider	
+							ContentValues cv = new ContentValues();
+							cv.put("key",String.valueOf(sg));
+							cv.put("value", orderMessFrag[1]);
+							Log.e("insert", String.valueOf(sg));
+							getBaseContext().getContentResolver().insert(mUri, cv);
+						}
+					}
+				}
+				else{
+					System.out.println("I M GROUP MEMBER");
+					//receive order message
+					if(messageText.contains("order")){
+						System.out.println("GROUP MEMBER - RECEIVED ORDER MESSAGE");
+						String[] orderMessFrag = messageText.split("_");
+						System.out.println("PRINT rg and sg AT GROUP MEMBER SIDE: rg: "+rg+" sg: "+sg);
+						if(messageList.contains(orderMessFrag[1]) && rg == sg){
+							System.out.println("DELIVER - "+ orderMessFrag[1]);
+							
+							ContentValues cv = new ContentValues();
+							cv.put("key",String.valueOf(sg));
+							cv.put("value", orderMessFrag[1]);
+							Log.e("insert", String.valueOf(sg));
+							getBaseContext().getContentResolver().insert(mUri, cv);
+							
+							rg=sg+1;
+						}
+					}
+					else{
+						//receive normal message - put it in a list
+						System.out.println("GROUP MEMBER - RECEIVED NORMAL MESSAGE AND ADDED TO LIST: "+ messageText);
+						messageList.add(messageText);
+					
+					}
+					
+
+					
+				}
 				
 
 				//System.out.println("Input Message: "+ messageText);
